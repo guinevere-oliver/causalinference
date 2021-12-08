@@ -34,6 +34,13 @@ exp(summary(mode.nb.random.off.main)[10]$coefficients[2,1] - 1.96*summary(mode.n
 exp(summary(mode.nb.random.off.main)[10]$coefficients[2,1] + 1.96*summary(mode.nb.random.off.main)[10]$coefficients[2,2])
 summary(mode.nb.random.off.main)[10]$coefficients[2,4]
 
+#coefficients 
+(betas <- fixef(mode.nb.random.off.main)) 
+betas<- data.frame(unlist(betas))
+names(betas)[1]<- "betas"
+betas$exp_beta<- round(exp(betas$betas),2)
+
+
 # - beds
 mode.nb.random.off.beds = glmer.nb(Deaths ~ mean_pm25 + factor(q_popdensity)
                                    + scale(poverty) + scale(log(medianhousevalue))
