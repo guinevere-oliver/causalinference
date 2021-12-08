@@ -1,8 +1,8 @@
-aggregate_pm_census_cdc_test_beds$face_masks <- ifelse(aggregate_pm_census_cdc_test_beds$Face_Masks_Required_in_Public == "Yes", 1, 
-               ifelse(aggregate_pm_census_cdc_test_beds$Face_Masks_Required_in_Public == "No", 2, 0))
+aggregate_pm_census_cdc_test_beds$face_masks<- ifelse(aggregate_pm_census_cdc_test_beds$Face_Masks_Required_in_Public=="Yes", 1, 0)
+aggregate_pm_census_cdc_test_beds[is.na(aggregate_pm_census_cdc_test_beds$face_masks),122]<-0 
 
 #Estimate propensity score
-fitps <- glm(Deaths ~ face_masks + X..Tests.per.100K
+fitps <- glm(Deaths ~ face_masks + Tests_per_100K
              + perc_unins, data=aggregate_pm_census_cdc_test_beds)
 summary(fitps)
 aggregate_pm_census_cdc_test_beds$ps <- predict(fitps, aggregate_pm_census_cdc_test_beds, type="response")
@@ -10,6 +10,11 @@ aggregate_pm_census_cdc_test_beds$ps <- predict(fitps, aggregate_pm_census_cdc_t
 summary(aggregate_pm_census_cdc_test_beds$ps[aggregate_pm_census_cdc_test_beds$Deaths==0])
 summary(aggregate_pm_census_cdc_test_beds$ps[aggregate_pm_census_cdc_test_beds$Deaths==1])
 
+#Outcome regression 
 fit<-glm(data=aggregate_pm_census_cdc_test_beds, mean_pm25 ~ Deaths + ps)
 summary(fit)
 cbind(coef(fit),confint(fit))
+
+#Matching
+
+#Stratification
