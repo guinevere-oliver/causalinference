@@ -2,6 +2,10 @@ library("dplyr")
 library(stringr)
 library(RCurl)
 library(httr)
+library(readr)
+library(lubridate)
+library(dplyr)
+
 
 date_of_study <- "06-18-2020"
 # Historical data
@@ -269,15 +273,15 @@ aggregate_pm_census_cdc_test_beds <- merge(aggregate_pm_census_cdc_test_beds, ac
 ######################
 
 testing_state="https://raw.githubusercontent.com/guinevere-oliver/causalinference/main/united_states_covid19_cases_deaths_and_testing_by_state.csv"
-testing_data<- read.csv(url(testing_state), skip = 2)
+testing_data<- read_csv(url(testing_state), skip = 2)
 testing_data<- as.data.frame(testing_data, check.names=FALSE)
 
 #Subset & data cleaning ---------------
-rownames(testing_data)<- testing_data$State.Territory
+rownames(testing_data)<- testing_data$`State/Territory`
 testing_data_df<- testing_data[c(1,18,19)] #"State/Territory"  "# Tests per 100K" "Total # Tests"
 testing_data_df<- testing_data_df[-1]
 testing_data_df<- as.data.frame(lapply(testing_data_df,as.numeric), check.names = FALSE)
-rownames(testing_data_df)<- testing_data$State.Territory
+rownames(testing_data_df)<- testing_data$`State/Territory` #State.Territory #change this part 
 testing_data_df$Province_State<- rownames(testing_data_df)
 testing_data_df$Province_State[38]<- "New York"
 
@@ -285,6 +289,7 @@ testing_data_df$Province_State[38]<- "New York"
 dim(aggregate_pm_census_cdc_test_beds) #3101  114
 aggregate_pm_census_cdc_test_beds<-merge(aggregate_pm_census_cdc_test_beds,testing_data_df, by.x ="Province_State", by.y = "Province_State", all.x = TRUE  )
 #3101 116 now 
+
 
 ######################
 # Masking data 
@@ -294,8 +299,7 @@ aggregate_pm_census_cdc_test_beds<-merge(aggregate_pm_census_cdc_test_beds,testi
 # Call masking data (CHANGE PATH) 
 masking <- read.csv("/Users/gwenoliver/Desktop/Causal Inference/Final Project/Masking_data.csv")
 # Subset to before July 2020
-library(lubridate)
-library(dplyr)
+
 masking$date_new<- as_date(masking$date, format ="%m/%d/%Y")
 masking_june<-masking%>% filter(masking$date_new < "2020-07-01")
 range(masking_june$date_new) #Range: "2020-04-10" "2020-06-30"
