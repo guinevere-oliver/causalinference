@@ -321,6 +321,8 @@ summ <- as.data.frame(summ)
 
 # Merge summ with aggregate data
 aggregate_pm_census_cdc_test_beds<-merge(aggregate_pm_census_cdc_test_beds, summ, by.x ="NAME.x", by.y = "County_Name", all.x = TRUE  )
+                                                                                                              
+aggregate_pm_census_cdc_test_beds <- rename(aggregate_pm_census_cdc_test_beds, Tests_per_100K = `# Tests per 100K`)                                                                                                              
 
 
 # (Deplicated) Request FB survey data from CMU COVIDcast Delphi Research Group
