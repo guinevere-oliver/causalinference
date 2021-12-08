@@ -5,8 +5,7 @@ median(aggregate_pm_census_cdc_test_beds$mean_pm25)
 aggregate_pm_census_cdc_test_beds$pm25 <- cut(aggregate_pm_census_cdc_test_beds$mean_pm25, breaks = c(-Inf, median(aggregate_pm_census_cdc_test_beds$mean_pm25), +Inf), labels = c(0,1))
 
 #Estimate propensity score
-fitps <- glm(pm25 ~ face_masks + Tests_per_100K
-             + perc_unins, data=aggregate_pm_census_cdc_test_beds)
+fitps <- glm(pm25 ~ face_masks + Tests_per_100K + perc_unins, data=aggregate_pm_census_cdc_test_beds, family=binomial())
 summary(fitps)
 aggregate_pm_census_cdc_test_beds$ps <- predict(fitps, aggregate_pm_census_cdc_test_beds, type="response")
 
@@ -14,9 +13,10 @@ summary(aggregate_pm_census_cdc_test_beds$ps[aggregate_pm_census_cdc_test_beds$p
 summary(aggregate_pm_census_cdc_test_beds$ps[aggregate_pm_census_cdc_test_beds$pm25==1])
 
 ###Outcome regression 
-fit<-glm(data=aggregate_pm_census_cdc_test_beds, pm25 ~ Deaths + ps)
+fit<-glm(data=aggregate_pm_census_cdc_test_beds, pm25 ~ Deaths + ps, family=binomial())
 summary(fit)
 cbind(coef(fit),confint(fit))
+#Beta= 0.002518571  95% CI: 0.002065321, 0.003007687
 
 ###Matching
 install.packages("MatchIt")
@@ -51,6 +51,7 @@ ggplot(g.matches, aes(x = ps, fill = factor(pm25))) + geom_density(alpha = 0.2) 
 fitmat <- glm(Deaths ~ pm25 + ps, data=g.matches)
 summary(fitmat)
 cbind(beta = coef(fitmat), confint(fitmat))
+#Beta= 39.41801 95% CI: 30.41771, 48.4183
 
 ###Stratification
 
@@ -83,8 +84,8 @@ m <- metagen(Estimate,
              SE,
              data=agg_eff,
              studlab=paste(pc.desc),
-             comb.fixed = TRUE,
-             comb.random = FALSE,
+             fixed = FALSE,
+             random = TRUE,
              prediction=TRUE,
              sm="SMD")
 
