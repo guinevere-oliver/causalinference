@@ -13,7 +13,7 @@ summary(aggregate_pm_census_cdc_test_beds$ps[aggregate_pm_census_cdc_test_beds$p
 summary(aggregate_pm_census_cdc_test_beds$ps[aggregate_pm_census_cdc_test_beds$pm25==1])
 
 ###Outcome regression 
-fit<-glm(data=aggregate_pm_census_cdc_test_beds, pm25 ~ Deaths + ps, family=binomial())
+fit<-glm(data=aggregate_pm_census_cdc_test_beds, Deaths ~ pm25 + ps, family=binomial())
 summary(fit)
 cbind(coef(fit),confint(fit))
 #Beta= 0.002518571  95% CI: 0.002065321, 0.003007687
