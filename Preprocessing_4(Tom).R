@@ -2,6 +2,8 @@ library(dplyr)
 library(stringr)
 library(RCurl)
 library(httr)
+library(readr)
+library(lubridate)
 
 date_of_study <- "06-18-2020"
 # Historical data
@@ -259,83 +261,57 @@ acs_data$fips <- substr(acs_data$GEO_ID,10,14)
 aggregate_pm_census_cdc_test_beds <- merge(aggregate_pm_census_cdc_test_beds, acs_data, by="fips", all.x=TRUE)
 
 ######################
+# Testing data 
+######################
+
+testing_state="https://raw.githubusercontent.com/guinevere-oliver/causalinference/main/united_states_covid19_cases_deaths_and_testing_by_state.csv"
+testing_data<- read_csv(url(testing_state), skip = 2)
+testing_data<- as.data.frame(testing_data, check.names=FALSE)
+
+#Subset & data cleaning ---------------
+rownames(testing_data)<- testing_data$`State/Territory`
+testing_data_df<- testing_data[c(1,18,19)] #"State/Territory"  "# Tests per 100K" "Total # Tests"
+testing_data_df<- testing_data_df[-1]
+testing_data_df<- as.data.frame(lapply(testing_data_df,as.numeric), check.names = FALSE)
+rownames(testing_data_df)<- testing_data$`State/Territory` #State.Territory #change this part 
+testing_data_df$Province_State<- rownames(testing_data_df)
+testing_data_df$Province_State[38]<- "New York"
+
+#merging testing data with aggregate data ---------------
+dim(aggregate_pm_census_cdc_test_beds) #3101  114
+aggregate_pm_census_cdc_test_beds<-merge(aggregate_pm_census_cdc_test_beds,testing_data_df, by.x ="Province_State", by.y = "Province_State", all.x = TRUE  )
+#3101 116 now 
+
+
+######################
 # Masking data 
 ######################
-#from github 
-masking <- read.csv("G:/My Drive/Fall 2021/EHS 566 Causal Inference Methods in Public Health Research/causalinference-main/Masking_data.csv")
 
-# Subset
-library(lubridate)
-library(dplyr)
+# Download masking data from Github
+# Call masking data (CHANGE PATH) 
+masking <- read.csv("G:/My Drive/Fall 2021/EHS 566 Causal Inference Methods in Public Health Research/causalinference-main/Masking_data.csv")
+# Subset to before July 2020
+
 masking$date_new<- as_date(masking$date, format ="%m/%d/%Y")
 masking_june<-masking%>% filter(masking$date_new < "2020-07-01")
 range(masking_june$date_new) #Range: "2020-04-10" "2020-06-30"
+# Remove unnecessary columns
+masking_june <- masking_june[,-c(5:6,8:11)]
 
-# Merge ACS with masking_june
-masking_june=rename(masking_june, "NAME" = "County_Name")
-colnames(masking_june)
-mask_law <- merge(masking_june, acs_data, by="NAME", all.x=TRUE)
+# Summarize masking_june by frequency of Face_Masks_Required_in_Public
+tallied <- masking_june %>% group_by(State_Tribe_Territory,County_Name,FIPS_State,FIPS_County,Face_Masks_Required_in_Public) %>% 
+  summarize(frequency = n()) %>% 
+  ungroup()
 
-# (Deplicated) Request FB survey data from CMU COVIDcast Delphi Research Group
-#aggregate_pm_census_cdc_test_beds$cli <- 
-#  sapply(aggregate_pm_census_cdc_test_beds$fips, 
-#         function(fips){
-#           if (Epidata$covidcast('fb-survey', 'smoothed_cli', 'day', 'county', 
-#                                 list(Epidata$range(20200401,
-#                                                    paste0(substring(str_remove_all(date_of_study, "-"), 5, 8),
-#                                                           substring(str_remove_all(date_of_study, "-"), 1, 4)))), 
-#                                 fips)[[2]] != "no results"){
-#             return(mean(sapply(Epidata$covidcast('fb-survey', 'smoothed_cli', 'day', 'county', 
-#                                                  list(Epidata$range(20200401, 
-#                                                                     paste0(substring(str_remove_all(date_of_study, "-"), 5, 8),
-#                                                                            substring(str_remove_all(date_of_study, "-"), 1, 4)))),
-#                                                  fips)[[2]], function(i){i$value}), na.rm = TRUE))
-#             } else {return(NA)}})
+# Filter down to the most common Face_Masks_Required_in_Public for each county
+summ <- tallied %>% 
+  group_by(State_Tribe_Territory,County_Name,FIPS_State,FIPS_County) %>% 
+  filter(frequency == max(frequency)) %>%
+  ungroup()
+# Make df
+summ <- as.data.frame(summ)
 
-# Mobility data from Facebook Data for Good
-## access at https://www.facebook.com/geoinsights-portal/
-#date_of_mobility <- seq(as.Date("2020-03-01"), as.Date(strptime(date_of_study, "%m-%d-%Y")), by = "days")
-#
-#covid_us_daily_mobility <- lapply(date_of_mobility,
-#                                  function(date_of_mobility) {
-#                                    covid_mobility <- read.csv(paste0("/mobility/Covid19 Mobility Metrics US_county_US_county_", date_of_mobility, ".csv"))
-#                                    colnames(covid_mobility)[12] <- "fips"
-#                                    covid_mobility$fips <- str_pad(covid_mobility$fips, 5, pad = "0")
-#                                    return(covid_mobility)
-#                                  }
-#                                  )
+# Merge summ with aggregate data
+aggregate_pm_census_cdc_test_beds<-merge(aggregate_pm_census_cdc_test_beds, summ, by.x ="NAME.x", by.y = "County_Name", all.x = TRUE  )
 
-## all_day_bing_tiles_visited_relative_change: the average number of level 16 Bing tiles (0.6km by 0.6km) that a Facebook user (mobile app + location history) was present 
-## in during a 24 hour period compared to pre-crisis levels.
-## all_day_bing_tiles_visited_relative_change indicates the relative change of mobility for each county during the COVID-19 pandemic
-#relative_mobility <- data.frame(aggregate_pm_census_cdc_test_beds[, c("fips", "mean_pm25")])
-#for (i in 1:length(covid_us_daily_mobility)) {
-#  relative_mobility <- merge(relative_mobility, 
-#                             covid_us_daily_mobility[[i]][, c("all_day_bing_tiles_visited_relative_change", "fips")], 
-#                             by = "fips", 
-#                             all.x = TRUE)
-#  }
-### mean_visited_change: average all_day_bing_tiles_visited_relative_change over the study period.
-#relative_mobility$mean_visited_change <-
-#  rowMeans(relative_mobility[, 3:dim(relative_mobility)[2]], na.rm = TRUE)
-
-## all_day_ratio_single_tile_users: the percentage of Facebook users (mobile app + location history) that were present in only one such level 16 Bing tile in at least 3 different hours of the day.
-## all_day_ratio_single_tile_users indicates the absolute amount of mobility for each county during the COVID-19 pandemic
-#ratio_mobility <- data.frame(aggregate_pm_census_cdc_test_beds[, c("fips", "mean_pm25")])
-#for (i in 1:length(covid_us_daily_mobility)) {
-#  ratio_mobility <- merge(ratio_mobility, 
-#                          covid_us_daily_mobility[[i]][,c("all_day_ratio_single_tile_users", "fips")], 
-#                          by = "fips",
-#                          all.x = TRUE)
-#  }
-## mean_ratio: average all_day_ratio_single_tile_users over the whole study period.
-#ratio_mobility$mean_ratio <- rowMeans(ratio_mobility[, 3:dim(ratio_mobility)[2]], na.rm = TRUE)
-
-#aggregate_pm_census_cdc_test_beds_mobility <- merge(aggregate_pm_census_cdc_test_beds,
-#                                                    relative_mobility[,c("fips", "mean_visited_change")],
-#                                                    by = "fips", 
-#                                                    all.x = TRUE)
-#aggregate_pm_census_cdc_test_beds_mobility <- merge(aggregate_pm_census_cdc_test_beds_mobility,
-#                                                    ratio_mobility[, c("fips", "mean_ratio")],
-#                                                    by = "fips",
-#                                                    all.x = TRUE)
+aggregate_pm_census_cdc_test_beds <- rename(aggregate_pm_census_cdc_test_beds, Tests_per_100K = `# Tests per 100K`)
