@@ -219,7 +219,7 @@ aggregate_pm_census_cdc_test_beds[aggregate_pm_census_cdc_test_beds$Admin2 == "N
   subset(aggregate_pm_census_cdc_test_beds, Admin2 == "Queens" & Province_State == "New York")$beds +
   subset(aggregate_pm_census_cdc_test_beds, Admin2 == "Richmond" & Province_State == "New York")$beds
 
-######## CHANGED VARIABLE NAMES, REMOVED EDUCATION ##########
+######## CHANGED VARIABLE NAMES ##########
 vars <- c("mean_pm25", "poverty", "median_house_value", "median_household_income", "owner_occupied",
           "blk_pct", "hispanic_pct", "no_grad", "older_pecent", "prime_pecent", "mid_pecent", "obese", "smoke",
           "mean_summer_temp", "mean_summer_rm", "mean_winter_temp", "mean_winter_rm")
