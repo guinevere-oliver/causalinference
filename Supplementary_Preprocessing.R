@@ -324,6 +324,4 @@ aggregate_pm_census_cdc_test_beds<-merge(aggregate_pm_census_cdc_test_beds, summ
                                                                                                               
 aggregate_pm_census_cdc_test_beds <- rename(aggregate_pm_census_cdc_test_beds, Tests_per_100K = `# Tests per 100K`)                                                                                                              
 
-## Pre-processing 
-aggregate_pm_census_cdc_test_beds$face_masks<- ifelse(aggregate_pm_census_cdc_test_beds$Face_Masks_Required_in_Public=="Yes", 1, 0)
-aggregate_pm_census_cdc_test_beds$pm25 <- cut(aggregate_pm_census_cdc_test_beds$mean_pm25, breaks = c(-Inf, median(aggregate_pm_census_cdc_test_beds$mean_pm25), +Inf), labels = c(0,1))
+
