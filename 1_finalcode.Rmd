@@ -22,11 +22,10 @@ library("gamm4")
 library(MatchIt)
 ```
 
+# No need to run preprocessing.R file separately. Aggregated dataframe from that R script is stored in `aggregate_pm_census_cdc_test_beds_P6.RDS` file below.
 
+# Instruction: You can just run this r markdown and you're all set! 
 ```{r}
-# Prior to running this whole markdown
-# download the RDS file and redirect your working directory 
-
 # read in compiled dataframe 
 aggregate_pm_census_cdc_test_beds<- readRDS("./data/aggregate_pm_census_cdc_test_beds_P6.RDS") #result of pre-processing 
 final_df<- aggregate_pm_census_cdc_test_beds
